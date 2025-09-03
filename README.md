@@ -56,47 +56,58 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_iris
 
+# Load Iris dataset
 iris = load_iris()
-X = iris.data
-y = iris.target
+print(iris)
+X = iris.data  # Features
+y = iris.target  # Labels (already numerical)
 
+# Convert to DataFrame for easy inspection
 df = pd.DataFrame(X, columns=iris.feature_names)
+print(df)
 df['target'] = y
+print(df)
 
-print("First 5 rows of dataset: \n", df.head())
+# Display first and last 5 rows
+print("First 5 rows of dataset:\n", df.head())
 print("\nLast 5 rows of dataset:\n", df.tail())
 
+# Split dataset
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+# Standardize features
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
+# Convert to PyTorch tensors
 X_train = torch.tensor(X_train, dtype=torch.float32)
 X_test = torch.tensor(X_test, dtype=torch.float32)
 y_train = torch.tensor(y_train, dtype=torch.long)
 y_test = torch.tensor(y_test, dtype=torch.long)
 
+# Create DataLoader
 train_dataset = TensorDataset(X_train, y_train)
 test_dataset = TensorDataset(X_test, y_test)
-
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=16)
 
+# Define Neural Network Model
 class IrisClassifier(nn.Module):
-    def __init__(self, input_size, h1, h2, output_size):
+    def __init__(self, input_size):
         super(IrisClassifier, self).__init__()
-        self.fc1 = nn.Linear(input_size, h1)
-        self.fc2 = nn.Linear(h1, h2)
-        self.fc3 = nn.Linear(h2, output_size)
+        self.fc1 = nn.Linear(input_size, 16)
+        self.fc2 = nn.Linear(16, 8)
+        self.fc3 = nn.Linear(8, 3)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x=F.relu(self.fc1(x))
+        x=F.relu(self.fc2(x))
         return self.fc3(x)
 
+# Training function
 def train_model(model, train_loader, criterion, optimizer, epochs):
-    for epoch in range(epochs):
+     for epoch in range(epochs):
         model.train()
         for X_batch, y_batch in train_loader:
             optimizer.zero_grad()
@@ -104,24 +115,21 @@ def train_model(model, train_loader, criterion, optimizer, epochs):
             loss = criterion(outputs, y_batch)
             loss.backward()
             optimizer.step()
+
         if (epoch + 1) % 10 == 0:
             print(f'Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}')
 
-input_size = X_train.shape[1]
-output_size = len(iris.target_names)
-h1 = 10
-h2 = 11
+# Initialize model, loss function, and optimizer
+model = IrisClassifier(input_size=X_train.shape[1])
+criterion =nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-model = IrisClassifier(input_size=input_size, h1=h1, h2=h2, output_size=output_size)
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
+# Train the model
+train_model(model, train_loader, criterion, optimizer, epochs=100)
 
-epochs = 100
-train_model(model, train_loader, criterion, optimizer, epochs)
-
+# Evaluate the model
 model.eval()
 predictions, actuals = [], []
-
 with torch.no_grad():
     for X_batch, y_batch in test_loader:
         outputs = model(X_batch)
@@ -129,26 +137,36 @@ with torch.no_grad():
         predictions.extend(predicted.numpy())
         actuals.extend(y_batch.numpy())
 
+# Compute metrics
 accuracy = accuracy_score(actuals, predictions)
 conf_matrix = confusion_matrix(actuals, predictions)
 class_report = classification_report(actuals, predictions, target_names=iris.target_names)
 
+# Print details
 
-print(f'Test Accuracy: {accuracy:.2f}%\n')
+print("\nName: YUVA SREE M")
+print("Register No: 212223230251")
+print(f'Test Accuracy: {accuracy:.2f}%')
+print("Confusion Matrix:\n", conf_matrix)
 print("Classification Report:\n", class_report)
-print("\nConfusion Matrix:\n", conf_matrix)
+
+# Plot confusion matrix
 plt.figure(figsize=(6, 5))
 sns.heatmap(conf_matrix, annot=True, cmap='Blues', xticklabels=iris.target_names, yticklabels=iris.target_names, fmt='g')
 plt.xlabel("Predicted Labels")
 plt.ylabel("True Labels")
 plt.title("Confusion Matrix")
 plt.show()
-sample_input = X_test[5].unsqueeze(0)
+
+# Make a sample prediction
+sample_input = X_test[5].unsqueeze(0)  # Removed unnecessary .clone()
 with torch.no_grad():
     output = model(sample_input)
     predicted_class_index = torch.argmax(output[0]).item()
     predicted_class_label = iris.target_names[predicted_class_index]
 
+print("\nName: YUVA SREE M")
+print("Register No: 212223230251")
 print(f'Predicted class for sample input: {predicted_class_label}')
 print(f'Actual class for sample input: {iris.target_names[y_test[5].item()]}')
 ```
@@ -164,12 +182,14 @@ print(f'Actual class for sample input: {iris.target_names[y_test[5].item()]}')
 <img width="623" height="547" alt="image" src="https://github.com/user-attachments/assets/b13cbc75-1ac8-4a99-8807-8d2c2946f21a" />
 
 ## Classification Report
-<img width="526" height="198" alt="image" src="https://github.com/user-attachments/assets/f5f362e3-5a25-44c2-acaa-1f8b7e5376ee" />
+<img width="628" height="401" alt="image" src="https://github.com/user-attachments/assets/665af92b-b47a-4558-8ecd-892903d54b5c" />
+
 
 
 ### New Sample Data Prediction
 
-<img width="417" height="53" alt="image" src="https://github.com/user-attachments/assets/72da76d6-4fb5-451f-94da-5159b9e72b7c" />
+<img width="584" height="113" alt="image" src="https://github.com/user-attachments/assets/122c745a-604f-4355-8636-388fc2d07319" />
+
 
 ## RESULT
 Thus, a neural network classification model was successfully developed and trained using PyTorch
