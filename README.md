@@ -7,33 +7,33 @@ To develop a neural network classification model for the given dataset.
 The Iris dataset consists of 150 samples from three species of iris flowers (Iris setosa, Iris versicolor, and Iris virginica). Each sample has four features: sepal length, sepal width, petal length, and petal width. The goal is to build a neural network model that can classify a given iris flower into one of these three species based on the provided features.
 
 ## Neural Network Model
-<img width="915" height="407" alt="image" src="https://github.com/user-attachments/assets/5a1dcbe3-5fe2-4e5f-baff-21de0b4085ee" />
-
+Include the neural network model diagram.
 
 ## DESIGN STEPS
 ### STEP 1: 
-
 Load the Iris dataset using a suitable library.
 
 ### STEP 2: 
-
 Preprocess the data by handling missing values and normalizing features.
 
-### STEP 3: 
 
+### STEP 3: 
 Split the dataset into training and testing sets.
 
-### STEP 4: 
 
+### STEP 4: 
 Train a classification model using the training data.
 
-### STEP 5: 
 
+### STEP 5: 
 Evaluate the model on the test data and calculate accuracy.
 
-### STEP 6: 
 
+### STEP 6: 
 Display the test accuracy, confusion matrix, and classification report.
+
+
+
 
 ## PROGRAM
 
@@ -41,7 +41,7 @@ Display the test accuracy, confusion matrix, and classification report.
 
 ### Register Number: 212223230251
 
-```py
+```python
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -56,58 +56,47 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_iris
 
-# Load Iris dataset
 iris = load_iris()
-print(iris)
-X = iris.data  # Features
-y = iris.target  # Labels (already numerical)
+X = iris.data
+y = iris.target
 
-# Convert to DataFrame for easy inspection
 df = pd.DataFrame(X, columns=iris.feature_names)
-print(df)
 df['target'] = y
-print(df)
 
-# Display first and last 5 rows
-print("First 5 rows of dataset:\n", df.head())
+print("First 5 rows of dataset: \n", df.head())
 print("\nLast 5 rows of dataset:\n", df.tail())
 
-# Split dataset
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Standardize features
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# Convert to PyTorch tensors
 X_train = torch.tensor(X_train, dtype=torch.float32)
 X_test = torch.tensor(X_test, dtype=torch.float32)
 y_train = torch.tensor(y_train, dtype=torch.long)
 y_test = torch.tensor(y_test, dtype=torch.long)
 
-# Create DataLoader
 train_dataset = TensorDataset(X_train, y_train)
 test_dataset = TensorDataset(X_test, y_test)
-train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=16)
 
-# Define Neural Network Model
+train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
+
 class IrisClassifier(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self, input_size, h1, h2, output_size):
         super(IrisClassifier, self).__init__()
-        self.fc1 = nn.Linear(input_size, 16)
-        self.fc2 = nn.Linear(16, 8)
-        self.fc3 = nn.Linear(8, 3)
+        self.fc1 = nn.Linear(input_size, h1)
+        self.fc2 = nn.Linear(h1, h2)
+        self.fc3 = nn.Linear(h2, output_size)
 
     def forward(self, x):
-        x=F.relu(self.fc1(x))
-        x=F.relu(self.fc2(x))
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
         return self.fc3(x)
 
-# Training function
 def train_model(model, train_loader, criterion, optimizer, epochs):
-     for epoch in range(epochs):
+    for epoch in range(epochs):
         model.train()
         for X_batch, y_batch in train_loader:
             optimizer.zero_grad()
@@ -115,21 +104,24 @@ def train_model(model, train_loader, criterion, optimizer, epochs):
             loss = criterion(outputs, y_batch)
             loss.backward()
             optimizer.step()
-
         if (epoch + 1) % 10 == 0:
             print(f'Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}')
 
-# Initialize model, loss function, and optimizer
-model = IrisClassifier(input_size=X_train.shape[1])
-criterion =nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+input_size = X_train.shape[1]
+output_size = len(iris.target_names)
+h1 = 10
+h2 = 11
 
-# Train the model
-train_model(model, train_loader, criterion, optimizer, epochs=100)
+model = IrisClassifier(input_size=input_size, h1=h1, h2=h2, output_size=output_size)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.01)
 
-# Evaluate the model
+epochs = 100
+train_model(model, train_loader, criterion, optimizer, epochs)
+
 model.eval()
 predictions, actuals = [], []
+
 with torch.no_grad():
     for X_batch, y_batch in test_loader:
         outputs = model(X_batch)
@@ -137,59 +129,50 @@ with torch.no_grad():
         predictions.extend(predicted.numpy())
         actuals.extend(y_batch.numpy())
 
-# Compute metrics
 accuracy = accuracy_score(actuals, predictions)
 conf_matrix = confusion_matrix(actuals, predictions)
 class_report = classification_report(actuals, predictions, target_names=iris.target_names)
 
-# Print details
 
-print("\nName: YUVA SREE M")
-print("Register No: 212223230251")
-print(f'Test Accuracy: {accuracy:.2f}%')
-print("Confusion Matrix:\n", conf_matrix)
+print(f'Test Accuracy: {accuracy:.2f}%\n')
 print("Classification Report:\n", class_report)
-
-# Plot confusion matrix
+print("\nConfusion Matrix:\n", conf_matrix)
 plt.figure(figsize=(6, 5))
 sns.heatmap(conf_matrix, annot=True, cmap='Blues', xticklabels=iris.target_names, yticklabels=iris.target_names, fmt='g')
 plt.xlabel("Predicted Labels")
 plt.ylabel("True Labels")
 plt.title("Confusion Matrix")
 plt.show()
-
-# Make a sample prediction
-sample_input = X_test[5].unsqueeze(0)  # Removed unnecessary .clone()
+sample_input = X_test[5].unsqueeze(0)
 with torch.no_grad():
     output = model(sample_input)
     predicted_class_index = torch.argmax(output[0]).item()
     predicted_class_label = iris.target_names[predicted_class_index]
 
-print("\nName: YUVA SREE M")
-print("Register No: 212223230251")
 print(f'Predicted class for sample input: {predicted_class_label}')
 print(f'Actual class for sample input: {iris.target_names[y_test[5].item()]}')
+
 ```
 
 ### Dataset Information
+<img width="850" height="557" alt="image" src="https://github.com/user-attachments/assets/ea589a0b-3de1-4796-9085-c7c72bcaaa95" />
+<img width="307" height="201" alt="image" src="https://github.com/user-attachments/assets/183d9b30-942d-4b87-a57b-331c1b45c2cc" />
+<img width="202" height="19" alt="image" src="https://github.com/user-attachments/assets/8a886743-cb01-47bd-a733-359eeb47400c" />
 
-<img width="705" height="701" alt="image" src="https://github.com/user-attachments/assets/34860e86-e9d4-4c5b-aae9-93f287d3dbfd" />
 
 ### OUTPUT
 
 ## Confusion Matrix
+<img width="632" height="625" alt="image" src="https://github.com/user-attachments/assets/8ccd15af-2d4a-43e3-baec-0bff9426fce4" />
 
-<img width="623" height="547" alt="image" src="https://github.com/user-attachments/assets/b13cbc75-1ac8-4a99-8807-8d2c2946f21a" />
+
 
 ## Classification Report
-<img width="628" height="401" alt="image" src="https://github.com/user-attachments/assets/665af92b-b47a-4558-8ecd-892903d54b5c" />
-
+<img width="571" height="222" alt="image" src="https://github.com/user-attachments/assets/92f31e6a-07c0-4d04-aff3-e04429b7198e" />
 
 
 ### New Sample Data Prediction
-
-<img width="584" height="113" alt="image" src="https://github.com/user-attachments/assets/122c745a-604f-4355-8636-388fc2d07319" />
-
+<img width="772" height="226" alt="image" src="https://github.com/user-attachments/assets/a27e2e2b-81f9-4d93-b1b1-0063deaa0936" />
 
 ## RESULT
 Thus, a neural network classification model was successfully developed and trained using PyTorch
